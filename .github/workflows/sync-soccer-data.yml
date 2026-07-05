@@ -1,0 +1,29 @@
+name: Sync Soccer Data
+
+on:
+  schedule:
+    # Runs every day at 06:00 UTC. Adjust the cron expression as needed.
+    # Cron format: minute hour day month day-of-week (all in UTC)
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}  # allows manually triggering a run from the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ingestion script
+        env:
+          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python ingest.py --league 33973 --season 2025
