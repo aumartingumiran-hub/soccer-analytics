@@ -1,0 +1,116 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_SUPABASE",
+      "label": "Supabase Postgres",
+      "description": "Select the PostgreSQL data source connected to your Supabase soccer analytics database.",
+      "type": "datasource",
+      "pluginId": "postgres"
+    }
+  ],
+  "__requires": [
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" },
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" }
+  ],
+  "title": "Match Overview",
+  "uid": "match-overview",
+  "timezone": "browser",
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "name": "match_id",
+        "type": "query",
+        "label": "Match",
+        "datasource": { "type": "postgres", "uid": "${DS_SUPABASE}" },
+        "query": "SELECT m.id AS __value, concat(ht.name, ' vs ', at.name, ' (', to_char(m.kickoff, 'YYYY-MM-DD'), ')') AS __text FROM matches m JOIN teams ht ON ht.id = m.home_team_id JOIN teams at ON at.id = m.away_team_id ORDER BY m.kickoff DESC LIMIT 100;",
+        "refresh": 1,
+        "sort": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "Score",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT ht.name AS home, m.home_score, m.away_score, at.name AS away FROM matches m JOIN teams ht ON ht.id = m.home_team_id JOIN teams at ON at.id = m.away_team_id WHERE m.id = '$match_id';",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "xG Comparison (Home vs Away)",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT t.name AS team, mts.xg FROM match_team_stats mts JOIN teams t ON t.id = mts.team_id WHERE mts.match_id = '$match_id';",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "min": 0 }
+      }
+    },
+    {
+      "title": "Possession",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT t.name AS team, mts.possession_pct FROM match_team_stats mts JOIN teams t ON t.id = mts.team_id WHERE mts.match_id = '$match_id';",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Shots / Shots on Target",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "rawSql": "SELECT t.name AS team, mts.shots, mts.shots_on_target FROM match_team_stats mts JOIN teams t ON t.id = mts.team_id WHERE mts.match_id = '$match_id';",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Discipline (Fouls / Cards)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "rawSql": "SELECT t.name AS team, mts.fouls, mts.yellow_cards, mts.red_cards, mts.corners, mts.offsides FROM match_team_stats mts JOIN teams t ON t.id = mts.team_id WHERE mts.match_id = '$match_id';",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Match Timeline (Events by Minute)",
+      "type": "state-timeline",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "rawSql": "SELECT me.minute, t.name AS team, p.full_name AS player, me.event_type, me.detail FROM match_events me JOIN teams t ON t.id = me.team_id LEFT JOIN players p ON p.id = me.player_id WHERE me.match_id = '$match_id' ORDER BY me.minute;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Top Performers (Rating)",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "rawSql": "SELECT p.full_name AS player, t.name AS team, pms.minutes_played, pms.goals, pms.assists, pms.shots, pms.key_passes, pms.tackles, pms.rating FROM player_match_stats pms JOIN players p ON p.id = pms.player_id JOIN teams t ON t.id = pms.team_id WHERE pms.match_id = '$match_id' ORDER BY pms.rating DESC NULLS LAST;",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

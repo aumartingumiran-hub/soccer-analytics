@@ -1,0 +1,137 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_SUPABASE",
+      "label": "Supabase Postgres",
+      "description": "Select the PostgreSQL data source connected to your Supabase soccer analytics database.",
+      "type": "datasource",
+      "pluginId": "postgres"
+    }
+  ],
+  "__requires": [
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" },
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" }
+  ],
+  "title": "Player Performance",
+  "uid": "player-performance",
+  "timezone": "browser",
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "name": "season",
+        "type": "query",
+        "label": "Season",
+        "datasource": { "type": "postgres", "uid": "${DS_SUPABASE}" },
+        "query": "SELECT DISTINCT season AS __value, season AS __text FROM matches ORDER BY season DESC;",
+        "refresh": 1,
+        "sort": 0
+      },
+      {
+        "name": "team_id",
+        "type": "query",
+        "label": "Team",
+        "datasource": { "type": "postgres", "uid": "${DS_SUPABASE}" },
+        "query": "SELECT id AS __value, name AS __text FROM teams ORDER BY name;",
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": true
+      },
+      {
+        "name": "player_id",
+        "type": "query",
+        "label": "Player",
+        "datasource": { "type": "postgres", "uid": "${DS_SUPABASE}" },
+        "query": "SELECT id AS __value, full_name AS __text FROM players WHERE team_id = '$team_id' OR '$team_id' = '$__all' ORDER BY full_name;",
+        "refresh": 2,
+        "sort": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "Squad Leaderboard (Season)",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "description": "Sortable season aggregates for every player. Click column headers in Grafana to sort by goals, xG, rating, etc.",
+      "targets": [
+        {
+          "rawSql": "SELECT pss.full_name AS player, t.name AS team, pss.appearances, pss.total_minutes, pss.goals, pss.assists, round(pss.total_xg,2) AS xg, round(pss.total_xa,2) AS xa, round(pss.goals - pss.total_xg, 2) AS goals_vs_xg, pss.pass_accuracy_pct, pss.avg_rating FROM player_season_stats pss JOIN teams t ON t.id = pss.team_id WHERE pss.season = '$season' AND (t.id = '$team_id' OR '$team_id' = '$__all') ORDER BY pss.goals DESC;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Goals vs xG (Over/Underperformance)",
+      "type": "scatter",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 10 },
+      "description": "Points above the diagonal are finishing above their expected goals (clinical); below are underperforming their chances.",
+      "targets": [
+        {
+          "rawSql": "SELECT pss.full_name AS player, round(pss.total_xg,2) AS xg, pss.goals FROM player_season_stats pss WHERE pss.season = '$season' AND (pss.team_id = '$team_id' OR '$team_id' = '$__all') AND pss.total_xg > 0 ORDER BY pss.goals DESC;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Creativity: Assists vs xA",
+      "type": "scatter",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 10 },
+      "targets": [
+        {
+          "rawSql": "SELECT pss.full_name AS player, round(pss.total_xa,2) AS xa, pss.assists FROM player_season_stats pss WHERE pss.season = '$season' AND (pss.team_id = '$team_id' OR '$team_id' = '$__all') AND pss.total_xa > 0 ORDER BY pss.assists DESC;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Selected Player: Rating Trend",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "rawSql": "SELECT m.kickoff AS time, pms.rating FROM player_match_stats pms JOIN matches m ON m.id = pms.match_id WHERE pms.player_id = '$player_id' AND m.season = '$season' ORDER BY m.kickoff;",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 10 } }
+    },
+    {
+      "title": "Selected Player: Minutes per Matchday",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "description": "Spot rotation patterns or fatigue/injury risk from heavy minute loads.",
+      "targets": [
+        {
+          "rawSql": "SELECT m.matchday, pms.minutes_played FROM player_match_stats pms JOIN matches m ON m.id = pms.match_id WHERE pms.player_id = '$player_id' AND m.season = '$season' ORDER BY m.matchday;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Selected Player: Match-by-Match Log",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 28 },
+      "targets": [
+        {
+          "rawSql": "SELECT m.matchday, to_char(m.kickoff, 'YYYY-MM-DD') AS date, ht.name AS home, at.name AS away, pms.minutes_played, pms.goals, pms.assists, pms.shots, pms.key_passes, pms.tackles, pms.duels_won, pms.rating FROM player_match_stats pms JOIN matches m ON m.id = pms.match_id JOIN teams ht ON ht.id = m.home_team_id JOIN teams at ON at.id = m.away_team_id WHERE pms.player_id = '$player_id' AND m.season = '$season' ORDER BY m.kickoff DESC;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Duel & Defensive Contribution (Squad)",
+      "type": "barchart",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 38 },
+      "description": "Aggregated tackles, interceptions, and duel win rate — useful for identifying defensive workhorses.",
+      "targets": [
+        {
+          "rawSql": "SELECT p.full_name AS player, sum(pms.tackles) AS tackles, sum(pms.interceptions) AS interceptions, round(sum(pms.duels_won)::numeric / nullif(sum(pms.duels_won) + sum(pms.duels_lost), 0) * 100, 1) AS duel_win_pct FROM player_match_stats pms JOIN players p ON p.id = pms.player_id JOIN matches m ON m.id = pms.match_id WHERE m.season = '$season' AND (pms.team_id = '$team_id' OR '$team_id' = '$__all') GROUP BY p.full_name ORDER BY tackles DESC LIMIT 15;",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}
