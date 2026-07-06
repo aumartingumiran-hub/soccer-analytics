@@ -23,12 +23,14 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Sync Premier League
+        continue-on-error: true
         env:
           HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python ingest.py --league 33973 --season 2025
 
       - name: Sync World Cup
+        continue-on-error: true
         env:
           HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
