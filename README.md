@@ -1,3 +1,33 @@
+# Soccer Analytics Pipeline
+
+An end-to-end data pipeline that syncs live football match data, statistics, 
+and events from the Highlightly API into a Supabase (Postgres) database, 
+automated via GitHub Actions, and visualized through interactive Grafana dashboards.
+
+## What it does
+- Automatically syncs match results, team stats, player performance, and 
+  minute-by-minute match events on a daily schedule (GitHub Actions cron job)
+- Stores normalized relational data in Postgres (Supabase), with idempotent 
+  upserts so re-runs never create duplicates
+- Powers two interactive dashboards: a per-match overview (shots, xG, 
+  possession, discipline) and a player performance explorer with cascading 
+  season → team → player filters
+
+## Tech stack
+Python · PostgreSQL (Supabase) · GitHub Actions · Grafana · SQL
+
+## Skills demonstrated
+- REST API integration & rate-limit-aware data ingestion
+- Relational schema design (teams, matches, match_events, player_stats)
+- CI/CD automation (scheduled sync jobs, secrets management)
+- BI dashboard design (Grafana template variables, joins across tables)
+
+[📊 Live dashboard demo] https://aumgstats.grafana.net/public-dashboards/f395a6cafa684a00807e02f2b571a28b) 
+
+![Dashboard screenshot](path-to-screenshot.png)
+
+---
+
 # Soccer Analytics: Supabase + Grafana
 
 ## 1. Set up Supabase
