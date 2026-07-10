@@ -204,6 +204,27 @@ def sync_matches(cur, league_id, season):
     return finished_ids
 
 
+def sync_match_venue(cur, match_id):
+    """Fetch venue info (stadium name) from the detailed match endpoint and
+    update the matches row. This is a separate API call from the list
+    endpoint used in sync_matches(), since venue details aren't included
+    there. Not available for all matches/leagues (free tier + smaller
+    competitions may return nothing)."""
+    try:
+        detail = api_get(f"matches/{match_id}")
+    except requests.HTTPError:
+        return  # not available for this match (404)
+
+    venue = detail.get("venue") or {}
+    venue_name = venue.get("name")
+
+    if venue_name:
+        cur.execute(
+            "update matches set venue = %s where id = %s",
+            (venue_name, match_id),
+        )
+
+
 def sync_match_events(cur, match_id):
     try:
         events = api_get(f"events/{match_id}")
@@ -355,6 +376,7 @@ def main():
 
     try:
         if args.match:
+            sync_match_venue(cur, args.match)
             sync_team_stats(cur, args.match)
             sync_player_stats(cur, args.match)
             sync_match_events(cur, args.match)
@@ -364,6 +386,7 @@ def main():
             conn.commit()
             print(f"Syncing stats for {len(finished_ids)} finished matches...")
             for mid in finished_ids:
+                sync_match_venue(cur, mid)
                 sync_team_stats(cur, mid)
                 sync_player_stats(cur, mid)
                 sync_match_events(cur, mid)
