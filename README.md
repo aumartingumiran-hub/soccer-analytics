@@ -22,8 +22,6 @@ Python · PostgreSQL (Supabase) · GitHub Actions · Grafana · SQL
 - CI/CD automation (scheduled sync jobs, secrets management)
 - BI dashboard design (Grafana template variables, joins across tables)
 
-[📊 Live dashboard demo] https://aumgstats.grafana.net/public-dashboards/f395a6cafa684a00807e02f2b571a28b) 
-
 ![Dashboard screenshot](screenshots/match-overview.png)
 
 ---
