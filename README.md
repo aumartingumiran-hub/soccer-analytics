@@ -24,7 +24,7 @@ Python · PostgreSQL (Supabase) · GitHub Actions · Grafana · SQL
 
 [📊 Live dashboard demo] https://aumgstats.grafana.net/public-dashboards/f395a6cafa684a00807e02f2b571a28b) 
 
-![Dashboard screenshot](path-to-screenshot.png)
+![Dashboard screenshot](screenshots/match-overview.png)
 
 ---
 
