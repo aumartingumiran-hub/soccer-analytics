@@ -46,7 +46,7 @@ cp .env.example .env   # fill in your Highlightly key and DB URL
 python ingest.py --league 33973 --season 2025
 ```
 - `--league` is the Highlightly league ID. Look these up via the `/leagues` endpoint (e.g. `https://soccer.highlightly.net/leagues?leagueName=Premier%20League`) using your API key, or check their docs at https://highlightly.net/football-api/documentation/.
-- Free tier: 100 requests/day. Each finished match uses 2 requests (statistics + box score) on top of the initial matches call, so a full season backfill may need to run across several days.
+- Free tier: 100 requests/day. Each finished match uses 4 requests (venue, statistics, box score, events) on top of the initial matches call, so a full season backfill may need to run across several days.
 - Re-running is safe: all inserts use `on conflict ... do update` (idempotent upserts).
 
 ## 3. Connect Grafana to Supabase
@@ -65,7 +65,8 @@ python ingest.py --league 33973 --season 2025
 
 ## Notes / next steps
 - `match_events` (goals, cards, subs, assists by minute) is now populated automatically via Highlightly's `/events/{matchId}` endpoint — this powers the "Match Timeline" panel in the Match Overview dashboard.
-- ⚠️ This adds a **third** API request per finished match (on top of statistics + box-score), so each match now costs 3 requests instead of 2. On the free 100/day tier, that's roughly 33 matches per day, not 50 — plan backfills accordingly.
+- ⚠️ Venue lookup adds a 4th API request per finished match (on top of statistics + box-score + events), so each match now costs 4 requests instead of 3. On the free 100/day tier, that's roughly 25 matches per day — plan backfills accordingly.
+- Venue, weather, and referee data are only populated for popular/major leagues per Highlightly's coverage — smaller competitions may return no venue info even after this sync runs.
 - For a league table / season dashboard, query the `player_season_stats` view and `team_form` view defined in the schema — happy to build that dashboard JSON too.
 - Rate limits: Highlightly's free tier is 100 requests/day. Consider a paid tier ($9.49/mo for 7,500 req/day) if you need faster full-season backfills.
 - Highlightly also has a RapidAPI listing if you prefer managing it there instead of highlightly.net directly — search "Highlightly" or "Football Highlights API" on RapidAPI (published by highlightly-api). Same data, different billing dashboard.
