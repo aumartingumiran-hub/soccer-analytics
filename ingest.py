@@ -215,6 +215,10 @@ def sync_match_venue(cur, match_id):
     except requests.HTTPError:
         return  # not available for this match (404)
 
+    # Some Highlightly endpoints wrap a single match in a list
+    if isinstance(detail, list):
+        detail = detail[0] if detail else {}
+
     venue = detail.get("venue") or {}
     venue_name = venue.get("name")
 
