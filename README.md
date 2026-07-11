@@ -23,7 +23,7 @@ Python · PostgreSQL (Supabase) · GitHub Actions · Grafana · SQL
 - BI dashboard design (Grafana template variables, joins across tables)
 
 ![Dashboard screenshot](screenshots/match-overview.png)
-
+![Dashboard screenshot](Argentina - Egypt.png)
 ---
 
 # Soccer Analytics: Supabase + Grafana
